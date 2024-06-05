@@ -2,10 +2,13 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from part3_a import test_ewa
+
 # Load RTT data
 data_v = pd.read_csv('Vimeo.csv')['RTT']
 data_y = pd.read_csv('Youtube.csv')['RTT']
 data_r = pd.read_csv('Reddit.csv')['RTT']
+
 # Find the length of the shortest dataframe
 min_length = min(len(data_v), len(data_y), len(data_r))
 
@@ -17,49 +20,56 @@ data_r = data_r[:min_length].values
 # Define alpha values to test
 alphas = np.linspace(0.1, 0.9, 9)
 
-def simulate_rtt_change(data, alpha, change_point, factor):
-    srtt = data[0]
-    predictions = [srtt]
-    for i, rtt in enumerate(data[1:]):
-        if i == change_point:
-            rtt *= factor
-        srtt = (1 - alpha) * srtt + alpha * rtt
-        predictions.append(srtt)
-    return predictions
+# Define change point and factors
+change_point = min_length // 2
+factor_half = 0.5
+factor_double = 2
 
-# Define change point and factor
-change_point = len(data_v) // 2
-factor = 2  # For doubling
+# Apply the change to the data with factor of half
+data_v_half = data_v.copy()
+data_y_half = data_y.copy()
+data_r_half = data_r.copy()
+data_v_half[change_point:] *= factor_half
+data_y_half[change_point:] *= factor_half
+data_r_half[change_point:] *= factor_half
 
-# Calculate predictions for different alphas
-convergence_data = {alpha: simulate_rtt_change(data_v, alpha, change_point, factor) for alpha in alphas}
+# Apply the change to the data with factor of 2
+data_v_double = data_v.copy()
+data_y_double = data_y.copy()
+data_r_double = data_r.copy()
+data_v_double[change_point:] *= factor_double
+data_y_double[change_point:] *= factor_double
+data_r_double[change_point:] *= factor_double
 
-# Plot convergence
+# Calculate RMSE for each alpha value using test_ewa function
+rmse_vimeo_half = test_ewa(data_v_half, alphas)
+rmse_youtube_half = test_ewa(data_y_half, alphas)
+rmse_reddit_half = test_ewa(data_r_half, alphas)
+
+rmse_vimeo_double = test_ewa(data_v_double, alphas)
+rmse_youtube_double = test_ewa(data_y_double, alphas)
+rmse_reddit_double = test_ewa(data_r_double, alphas)
+
+# Plot RMSE vs. Alpha for factor of half
 plt.figure(figsize=(10, 6))
-for alpha, predictions in convergence_data.items():
-    plt.plot(predictions, label=f'Alpha {alpha:.1f}')
-plt.axvline(change_point, color='red', linestyle='--', label='Change Point')
-plt.xlabel('Sample Index')
-plt.ylabel('RTT (seconds)')
-plt.title('EWA Convergence After Doubling RTT (Vimeo)')
+plt.plot(alphas, rmse_vimeo_half, label='Vimeo')
+plt.plot(alphas, rmse_youtube_half, label='YouTube')
+plt.plot(alphas, rmse_reddit_half, label='Reddit')
+plt.xlabel('Weight of New Sample (Alpha)')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('RMSE vs. Alpha for EWA After Halving RTT')
 plt.legend()
 plt.grid(True)
 plt.show()
 
-
-factor = 0.5  # For halving
-
-# Calculate predictions for different alphas
-convergence_data_half = {alpha: simulate_rtt_change(data_v, alpha, change_point, factor) for alpha in alphas}
-
-# Plot convergence
+# Plot RMSE vs. Alpha for factor of 2
 plt.figure(figsize=(10, 6))
-for alpha, predictions in convergence_data_half.items():
-    plt.plot(predictions, label=f'Alpha {alpha:.1f}')
-plt.axvline(change_point, color='red', linestyle='--', label='Change Point')
-plt.xlabel('Sample Index')
-plt.ylabel('RTT (seconds)')
-plt.title('EWA Convergence After Halving RTT (Vimeo)')
+plt.plot(alphas, rmse_vimeo_double, label='RMSE Vimeo')
+plt.plot(alphas, rmse_youtube_double, label='RMSE Youtube')
+plt.plot(alphas, rmse_reddit_double, label='RMSE Reddit')
+plt.xlabel('Weight of New Sample (Alpha)')
+plt.ylabel('Root Mean Squared Error (RMSE)')
+plt.title('RMSE vs. Alpha After Doubling RTT')
 plt.legend()
 plt.grid(True)
 plt.show()
