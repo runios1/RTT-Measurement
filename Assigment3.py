@@ -30,7 +30,7 @@ def detect_and_correct(message, method):
         else:
             return None, 'retransmit'
     elif method == 'parity_matrix':
-        d = len(message) - 2 * int(np.sqrt(len(message) - int(np.sqrt(len(message)))))
+        d = int(len(message) - 2 * int(np.sqrt(len(message) - int(np.sqrt(len(message))))))
         data = message[:d]
         sqrt_d = int(np.sqrt(d))
         data_matrix = data.reshape((sqrt_d, sqrt_d))
@@ -57,16 +57,14 @@ def simulate(d, p, method, trials=1000):
     return efficiency_factor
 
 def main():
-    d = 500
+    d_values = [484, 576]  # Use perfect squares
     p_values = [0.0001, 0.001, 0.01, 0.05]
     methods = ['single_parity', 'parity_matrix']
-    results = {}
-    for p in p_values:
-        results[p] = {}
-        for method in methods:
-            efficiency = simulate(d, p, method)
-            results[p][method] = efficiency
-            print(f"p = {p}, method = {method}, efficiency = {efficiency:.4f}")
+    for d in d_values:
+        for p in p_values:
+            for method in methods:
+                efficiency = simulate(d, p, method)
+                print(f"d = {d}, p = {p}, method = {method}, efficiency = {efficiency:.4f}")
 
 if __name__ == "__main__":
     main()
